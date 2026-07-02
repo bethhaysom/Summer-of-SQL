@@ -48,15 +48,28 @@ select *
     , date('2023-12-'||joining_day) as Joining_Date
 from pd2023_wk04_december
 )
-
+,
+pivotcalc as
+(
 select 
     ID
     , Joining_Date
     , Account_Type
     , Date_of_Birth
     , Ethnicity
+    , row_number() over(partition by ID order by Joining_Date asc) as rn
 from dates
 pivot(min(value) for 
     demographic in
     ('Account Type' as Account_Type,'Date of Birth' as Date_of_Birth, 'Ethnicity' as Ethnicity)
     )
+)
+
+select
+    ID
+    , Joining_Date
+    , Account_Type
+    , Date_of_Birth
+    , Ethnicity
+from pivotcalc
+where rn = 1
