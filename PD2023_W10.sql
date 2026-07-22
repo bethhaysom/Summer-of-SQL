@@ -1,3 +1,5 @@
+set selected_date = '2023-02-01';
+
 with transactions as
 (
 select 
@@ -68,16 +70,38 @@ order by account_nm asc, balance_date asc, transaction_value desc
 
 -- week 10: what is balance on set day?
 -- carrying on CTEs:
-, agg_transactions as
+, day_trans as
 (
 select 
     account_nm
     , balance_date
     , sum(transaction_value) as value
-    , sum(balance) as balance
 from pd2023_w9_final
 group by account_nm, balance_date
 )
+,  balance_ordered as
+(
+select *
+    , row_number() over(
+        partition by account_nm, balance_date
+        order by transaction_value asc
+    ) as rn
+from pd2023_w9_final
+)
+, agg_transactions as
+(
+select 
+    b.account_nm
+    , b.balance_date
+    , t.value
+    , b.balance
+from balance_ordered as b
+inner join day_trans as t
+    on t.account_nm = b.account_nm
+    and t.balance_date = b.balance_date
+where rn=1
+)
+
 -- scaffolding dates
 , generated_dates as
 (
@@ -120,4 +144,4 @@ select
     , balance
     , transaction_value
 from full_statement
-where dates = '2023-02-01'
+where dates = $selected_date
